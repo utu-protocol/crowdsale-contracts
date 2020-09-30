@@ -14,8 +14,9 @@ describe("Sale", function() {
 		this.accounts = accounts
 
 		this.factory = await ethers.getContractFactory("Sale")
+		this.tetherFactory = await ethers.getContractFactory("TetherMock")
 		this.utuMock = await deployMockContract(this.owner, UTUToken.abi)
-		this.usdtMock = await deployMockContract(this.owner, USDT)
+		this.usdtMock = await this.tetherFactory.deploy()
 		this.contract = await this.factory.deploy(
 			this.utuMock.address,
 			this.usdtMock.address,
@@ -120,6 +121,22 @@ describe("Sale", function() {
 		it("should fail if contribution too big", async function() {
 			await expect(this.contract.buy(await this.contrib.getAddress(), this.maxContrib.add(1) , this.validSig)).to.be.revertedWith('UTU: above individual cap')
 		})
+
+	})
+
+	context("Checkout", function() {
+		beforeEach(async function() {
+			this.contrib = await this.accounts[0]
+			this.contribAddr = await this.contrib.getAddress()
+			const addr = ethers.utils.arrayify(this.contribAddr)
+			const msg = ethers.utils.arrayify(ethers.utils.keccak256(addr))
+			this.validSig = await this.kycAuthority.signMessage(msg)
+		})
+
+		it("should fail if contribution too small", async function() {
+			await expect(this.contract.buy(await this.contrib.getAddress(), this.minContrib.sub(1) , this.validSig)).to.be.revertedWith('UTU: below individual floor')
+		})
+
 
 	})
 

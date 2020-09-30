@@ -16,15 +16,18 @@ module.exports = {
   },
 	defaultNetwork: "buidlerevm",
   networks: {
+		goerli: {
+			url: "https://goerli.prylabs.net",
+		},
 		remote: {
 			url: "http://localhost:8540",
 		},
 		coverage: {
 			url: 'http://localhost:8555'
-		}
+		},
 		//ganache: {
-		//gasLimit: 6000000000,
-		//defaultBalanceEther: 10
+			//gasLimit: 6000000000,
+			//defaultBalanceEther: 10
 		//}
 	},
 	solc: {

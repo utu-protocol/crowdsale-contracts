@@ -48,7 +48,7 @@ contract Sale is Ownable {
 	// The following constants are all for the public sale.
 	uint256 public maxContribution = 500 * 10**6; // USDT uses 6 decimals.
 	uint256 public minContribution = 200 * 10**6;
-	uint256 public maxUSDT = 250000 * 10**6; // The sale is capped at 300 000 USDT
+	uint256 public maxUSDT = 250000 * 10**6; // The sale is capped at 250000 USDT
 	uint256 public maxUTU = 6250000 * 10**18;
 	uint256 public utuPerUSDT = (6250000 / 250000) * 10**12;
 	uint256 public usdtAvailable = maxUSDT;
@@ -59,6 +59,7 @@ contract Sale is Ownable {
 
 	// Private sale participants can claim their allocation after the public sale
 	// finishes.
+	bool public assigned;
 	mapping(address => Cart) public privateContributors;
 
 	event Contributed(address indexed kycAddress, address indexed sender, uint256 amount);
@@ -123,9 +124,9 @@ contract Sale is Ownable {
 	 *
 	 * @param kycAddr address to mint tokens to.
 	 */
-	function checkOutPublic(address _kycAddr) public {
+	function checkoutPublic(address _kycAddr) public {
 		require(block.timestamp > endTime, 'UTU: can only check out after sale');
-		require(publicContributors[msg.sender].amount > 0, 'UTU: no public allocation');
+		require(publicContributors[_kycAddr].amount > 0, 'UTU: no public allocation');
 		require(!publicContributors[_kycAddr].checkedOut, 'UTU: already checked out');
 
 		publicContributors[_kycAddr].checkedOut = true;
@@ -134,22 +135,39 @@ contract Sale is Ownable {
 		emit CheckOut(_kycAddr, publicContributors[_kycAddr].amount, true);
 	}
 
-	// TODO: Need to add function to fill privateContributors
+	/**
+	 * Assign the amounts for the private sale participants.
+	 *
+	 *  @param _contributors Address[] All the private contributor addresses
+	 *  @param _balances uint256[] All the private contributor balances
+	 */
+	function assignPrivate(
+		address[] memory _contributors,
+		uint256[] memory _balances
+	) onlyOwner public {
+		require(!assigned, "UTU: already assigned private sale");
+		require(_contributors.length == _balances.length, "UTU: mismatching array lengths");
+		for (uint32 i = 0 ; i < _contributors.length; i++) {
+			require(privateContributors[_contributors[i]].amount == 0, 'UTU: already assigned');
+			privateContributors[_contributors[i]] = Cart(_balances[i], false);
+		}
+		assigned = true;
+	}
 
 	/*
 	 * After the public sale finishes the private sale participants get their tokens
 	 * unlocked and can mint them.
 	 *
 	 */
-	function checkOutPrivate() public {
+	function checkoutPrivate(address _target) public {
 		require(block.timestamp > endTime, 'UTU: can only check out after sale');
-		require(privateContributors[msg.sender].amount > 0, 'UTU: no private allocation');
-		require(!privateContributors[msg.sender].checkedOut, 'UTU: already checked out');
+		require(privateContributors[_target].amount > 0, 'UTU: no private allocation');
+		require(!privateContributors[_target].checkedOut, 'UTU: already checked out');
 
-		privateContributors[msg.sender].checkedOut = true;
-		IUTUToken(utuToken).mint(msg.sender, privateContributors[msg.sender].amount);
+		privateContributors[_target].checkedOut = true;
+		IUTUToken(utuToken).mint(_target, privateContributors[_target].amount);
 
-		emit CheckOut(msg.sender, publicContributors[msg.sender].amount, false);
+		emit CheckOut(_target, privateContributors[_target].amount, false);
 	}
 
 	/*
@@ -191,6 +209,5 @@ contract Sale is Ownable {
 			ERC20(_token).safeTransfer(_to, balance);
 		}
 	}
-
 }
 
