@@ -16,7 +16,7 @@ describe("Sale", function() {
 		this.factory = await ethers.getContractFactory("Sale")
 		this.tetherFactory = await ethers.getContractFactory("TetherMock")
 		this.utuMock = await deployMockContract(this.owner, UTUToken.abi)
-		this.usdtMock = await this.tetherFactory.deploy()
+		this.usdtMock = await this.tetherFactory.deploy(ethers.BigNumber.from("1000000000"))
 		this.contract = await this.factory.deploy(
 			this.utuMock.address,
 			this.usdtMock.address,
@@ -27,6 +27,7 @@ describe("Sale", function() {
 
 		this.minContrib = await this.contract.minContribution()
 		this.maxContrib = await this.contract.maxContribution()
+
 	})
 
 	context("Initialize", function() {
@@ -47,6 +48,16 @@ describe("Sale", function() {
 
 	})
 
+	context("Tether", function() {
+		it("should approve", async function() {
+			await this.usdtMock.approve(this.contract.address, ethers.BigNumber.from("0"))
+		})
+
+		it("should transfer", async function() {
+			await this.usdtMock.transfer(this.contract.address, ethers.BigNumber.from("1"))
+		})
+	})
+
 	context("Buy", function() {
 		beforeEach(async function() {
 			this.contrib = await this.accounts[0]
@@ -54,6 +65,8 @@ describe("Sale", function() {
 			const addr = ethers.utils.arrayify(this.contribAddr)
 			const msg = ethers.utils.arrayify(ethers.utils.keccak256(addr))
 			this.validSig = await this.kycAuthority.signMessage(msg)
+
+			await this.usdtMock.issue(this.contribAddr, this.maxContrib);
 		})
 
 		it("should succeed with min contrib", async function() {
@@ -63,7 +76,7 @@ describe("Sale", function() {
 			const out = ethers.utils.parseEther('5000.0')
 
 			await this.utuMock.mock.mint.returns()
-			await this.usdtMock.mock.transferFrom.returns()
+			await this.usdtMock.connect(this.contrib).approve(this.contract.address, toBuy);
 
 			await expect(
 				this.contract.connect(this.contrib).buy(this.contribAddr, toBuy, this.validSig)
@@ -78,7 +91,7 @@ describe("Sale", function() {
 			const out = ethers.utils.parseEther('5000.003075000000000000')
 
 			await this.utuMock.mock.mint.returns()
-			await this.usdtMock.mock.transferFrom.returns()
+			await this.usdtMock.connect(this.contrib).approve(this.contract.address, toBuy);
 
 			await expect(
 				this.contract.connect(this.contrib).buy(this.contribAddr, toBuy, this.validSig)
@@ -94,7 +107,7 @@ describe("Sale", function() {
 			const out = ethers.utils.parseEther('12500.0')
 
 			await this.utuMock.mock.mint.returns()
-			await this.usdtMock.mock.transferFrom.returns()
+			await this.usdtMock.connect(this.contrib).approve(this.contract.address, toBuy);
 
 			await expect(
 				this.contract.connect(this.contrib).buy(this.contribAddr, toBuy, this.validSig)
@@ -106,7 +119,7 @@ describe("Sale", function() {
 			const toBuy = this.minContrib
 
 			await this.utuMock.mock.mint.returns()
-			await this.usdtMock.mock.transferFrom.returns()
+			await this.usdtMock.connect(this.contrib).approve(this.contract.address, toBuy);
 
 			await this.contract.connect(this.contrib).buy(this.contribAddr, toBuy, this.validSig)
 			await expect(

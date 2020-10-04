@@ -34,14 +34,6 @@ contract TetherMock {
 	// Called if contract ever adds fees
 	event Params(uint feeBasisPoints, uint maxFee);
 
-	/**
-	 * @dev Fix for the ERC20 short address attack.
-	*/
-	modifier onlyPayloadSize(uint size) {
-		require(msg.data.length > size + 4);
-		_;
-	}
-
 	//  The contract can be initialized with a number of tokens
 	//  All the tokens are deposited to the owner address
 	//
@@ -57,7 +49,7 @@ contract TetherMock {
 		decimals = 6;
 	}
 
-	function transferFrom(address _from, address _to, uint _value) onlyPayloadSize(3 * 32) public {
+	function transferFrom(address _from, address _to, uint _value) public {
 		uint256 _allowance = allowed[_from][msg.sender];
 
 		// Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
@@ -91,7 +83,7 @@ contract TetherMock {
 	* @param _spender The address which will spend the funds.
 	* @param _value The amount of tokens to be spent.
 	*/
-	function approve(address _spender, uint _value) onlyPayloadSize(2 * 32) public {
+	function approve(address _spender, uint _value) public {
 
 		// To change the approve amount you first have to reduce the addresses`
 		//  allowance to zero by calling `approve(_spender, 0)` if it is not
@@ -123,7 +115,7 @@ contract TetherMock {
 	* @param _to The address to transfer to.
 		* @param _value The amount to be transferred.
 			*/
-	function transfer(address _to, uint _value) onlyPayloadSize(2 * 32) public {
+	function transfer(address _to, uint _value) public {
 		uint fee = (_value.mul(basisPointsRate)).div(10000);
 		if (fee > maximumFee) {
 			fee = maximumFee;
@@ -139,8 +131,6 @@ contract TetherMock {
 	//
 	// @param _amount Number of tokens to be issued
 	function issue(address _to, uint amount) public {
-		require(!(_totalSupply + amount < _totalSupply));
-
 		balances[_to] += amount;
 		_totalSupply += amount;
 		Issue(amount);

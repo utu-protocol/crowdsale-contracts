@@ -22,7 +22,7 @@ async function deploy() {
 	const sale = await saleFactory.deploy(
 		ethers.constants.AddressZero, // UTU Token
 		tether.address, // USDT
-		await wallet.address, // KYC authority
+		"0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF", // KYC authority
 		await wallet.address, // treasury
 		Math.floor(Date.now() / 1000) - 100 // sale start
 	);
