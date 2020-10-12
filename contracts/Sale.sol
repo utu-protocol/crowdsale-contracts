@@ -46,13 +46,12 @@ contract Sale is Ownable {
 	uint256 public endTime;
 
 	// The following constants are all for the public sale.
-	uint256 public maxContribution = 500 * 10**6; // USDT uses 6 decimals.
+	uint256 public maxContribution = 1242 * 10**6; // USDT uses 6 decimals.
 	uint256 public minContribution = 200 * 10**6;
 	uint256 public maxUSDT = 250000 * 10**6; // The sale is capped at 250000 USDT
 	uint256 public maxUTU = 6250000 * 10**18;
 	uint256 public utuPerUSDT = (6250000 / 250000) * 10**12;
 	uint256 public usdtAvailable = maxUSDT;
-	uint256 public utuAvailable = maxUTU;
 
 	// Mapping from KYC address to withdrawal address.
 	mapping(address => Cart) public publicContributors;
@@ -101,9 +100,11 @@ contract Sale is Ownable {
 	function buy(address _kycAddr, uint256 amount, bytes memory signature) public {
 		require(usdtAvailable > 0, 'UTU: no more UTU token available');
 		require(isActive(), 'UTU: sale is not active');
-		require(amount <= maxContribution, 'UTU: above individual cap');
+		if (!isUncapped()) {
+			require(amount <= maxContribution, 'UTU: above individual cap');
+			require(publicContributors[_kycAddr].amount == 0, 'UTU: already bought');
+		}
 		require(amount >= minContribution, 'UTU: below individual floor');
-		require(publicContributors[_kycAddr].amount == 0, 'UTU: already bought');
 
 		uint256 _usdtActual = amount > usdtAvailable ? usdtAvailable : amount;
 		uint256 out = usdtToUTU(_usdtActual);
@@ -112,7 +113,7 @@ contract Sale is Ownable {
 		bytes32 eh = keccak256(abi.encodePacked(_kycAddr)).toEthSignedMessageHash();
 		require(ECDSA.recover(eh, signature) == kycAuthority, 'UTU: invalid signature');
 
-		publicContributors[_kycAddr] = Cart(out, false);
+		publicContributors[_kycAddr].amount = publicContributors[_kycAddr].amount.add(out);
 		usdt.safeTransferFrom(msg.sender, treasury, _usdtActual);
 
 		emit Contributed(_kycAddr, msg.sender, out);
@@ -180,10 +181,24 @@ contract Sale is Ownable {
 	}
 
 	/*
+	 * Calculate amount of UTU coins left for purchase.
+	 */
+	function utuAvailable() public view returns (uint256) {
+		return usdtAvailable.mul(utuPerUSDT);
+	}
+
+	/*
 	 * Check whether the sale is active or not
 	 */
 	function isActive() public view returns (bool) {
 		return block.timestamp >= startTime && block.timestamp < endTime;
+	}
+
+	/*
+	 * Check whether the cap on individual contributions is active.
+	 */
+	function isUncapped() public view returns (bool) {
+		return block.timestamp > startTime + 1 hours;
 	}
 
 	/**
