@@ -186,6 +186,36 @@ describe("Sale", function() {
 
 	})
 
+	it("should not sell more than available", async function() {
+		this.contrib = await this.accounts[0];
+		this.contribAddr = await this.contrib.getAddress();
+		const addr = ethers.utils.arrayify(this.contribAddr);
+		const msg = ethers.utils.arrayify(ethers.utils.keccak256(addr));
+		this.validSig = await this.kycAuthority.signMessage(msg);
+
+		const toBuy = (await this.contract.usdtAvailable()).add(100);
+		await this.usdtMock.issue(this.contribAddr, toBuy);
+		const before = await this.usdtMock.balanceOf(this.contribAddr);
+
+		await increaseTime(aDay);
+		await increaseTime(anHour);
+
+		//const out = await this.contract.usdtToUTU(toBuy.sub(100));
+		const out = await this.contract.maxUTU();
+
+		await this.usdtMock.connect(this.contrib).approve(this.contract.address, toBuy);
+
+		await expect(
+			this.contract.connect(this.contrib).buy(this.contribAddr, toBuy, this.validSig)
+		).to.emit(this.contract, 'Contributed')
+			.withArgs(this.contribAddr, this.contribAddr, out);
+
+		expect(await this.usdtMock.balanceOf(this.contribAddr)).to.be.equal(before.sub(await this.contract.maxUSDT()));
+
+		await increaseTime(-anHour);
+		await increaseTime(-aDay);
+	})
+
 	context("Buy#Failure", function() {
 		beforeEach(async function() {
 			this.contrib = await this.accounts[0];
@@ -194,7 +224,7 @@ describe("Sale", function() {
 			const msg = ethers.utils.arrayify(ethers.utils.keccak256(addr));
 			this.validSig = await this.kycAuthority.signMessage(msg);
 
-			await this.usdtMock.issue(this.contribAddr, this.maxContrib);
+			await this.usdtMock.issue(this.contribAddr, this.maxContrib.mul(10));
 		})
 
 		before(async function() {

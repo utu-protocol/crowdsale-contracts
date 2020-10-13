@@ -1,9 +1,8 @@
 const fs = require('fs');
 const { ethers, config } = require("@nomiclabs/buidler");
 
-
 // This expects a wallet.json with the default Ethereum keystore format and the
-// unlock password in the WALLET_PASSWORT environment var.
+// unlock password in the WALLET_PASSWORD environment var.
 
 async function deploy() {
 	const j = fs.readFileSync('wallet.json', 'utf8');
@@ -23,7 +22,7 @@ async function deploy() {
 		ethers.constants.AddressZero, // UTU Token
 		tether.address, // USDT
 		"0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF", // KYC authority
-		await wallet.address, // treasury
+		"0x0B43E683d75801Fe435F5d027f0DBb799968a983", // treasury
 		Math.floor(Date.now() / 1000) - 100 // sale start
 	);
 	await sale.deployed();

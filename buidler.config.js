@@ -14,6 +14,7 @@ module.exports = {
 	gasReporter: {
     enabled: (process.env.REPORT_GAS) ? true : false
   },
+	etherscan: { apiKey: process.env.ETHERSCAN_API },
 	defaultNetwork: "buidlerevm",
   networks: {
 		goerli: {
@@ -22,12 +23,15 @@ module.exports = {
 		remote: {
 			url: "http://localhost:8540",
 		},
+		homestead: {
+			url: process.env.WEB3_API || "",
+		},
 		coverage: {
 			url: 'http://localhost:8555'
 		},
 		//ganache: {
-			//gasLimit: 6000000000,
-			//defaultBalanceEther: 10
+		//gasLimit: 6000000000,
+		//defaultBalanceEther: 10
 		//}
 	},
 	solc: {
