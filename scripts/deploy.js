@@ -1,9 +1,8 @@
 const fs = require('fs');
 const { ethers, config } = require("@nomiclabs/buidler");
 
-
 async function deploy() {
-	const w  = await new ethers.Wallet.fromEncryptedJson(fs.readFileSync('wallet.json', 'utf8'), process.env.WALLET_PASSWORD);
+	const w  = await new ethers.Wallet.fromEncryptedJson(fs.readFileSync(process.env.WALLET, 'utf8'), process.env.WALLET_PASSWORD);
 	const ip = new ethers.providers.JsonRpcProvider(config.networks.homestead.url);
 	const wallet = w.connect(ip);
 
