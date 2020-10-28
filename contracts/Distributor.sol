@@ -12,6 +12,7 @@ interface IUTUToken {
 contract Distributor is Ownable {
 	using SafeMath for uint256;
 
+	// Use a global counter so batches when distributing cannot overlap.
 	uint256 private idx;
 
 	address public utuToken;
