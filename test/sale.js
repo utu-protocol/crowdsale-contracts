@@ -441,6 +441,8 @@ describe("Sale", function() {
 			ethers.utils.parseEther("4038.46"), // 0xA947960739C6cb01Be33F10D3c34bE49baDe1B6c
 		];
 
+		console.log(`${await this.contract.estimateGas.assignPrivate(buyers, balances)}`);
+
 		await this.contract.assignPrivate(buyers, balances);
 	})
 
